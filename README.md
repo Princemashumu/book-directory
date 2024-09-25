@@ -16,7 +16,7 @@ Clone the repository or download the project files:
 bash
 Copy code
 ```
-git clone <repository-url>
+git clone https://github.com/Princemashumu/book-directory.git
 cd bookdirectory
 ```
 
