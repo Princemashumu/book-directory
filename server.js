@@ -1,16 +1,33 @@
 const http = require('http');
+const fs = require('fs');
 const url = require('url');
 const { parse } = require('querystring');
 
-// In-memory array to store books
-let books = [];
+const BOOKS_FILE = 'books.json';
 
-// Create the HTTP server
+// Function to read books from the file
+const readBooksFromFile = () => {
+    try {
+        const data = fs.readFileSync(BOOKS_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        return []; // Return an empty array if the file doesn't exist or can't be read
+    }
+};
+
+// Function to write books to the file
+const writeBooksToFile = (books) => {
+    fs.writeFileSync(BOOKS_FILE, JSON.stringify(books, null, 2), 'utf8');
+};
+
+// Initialize books from the JSON file
+let books = readBooksFromFile();
+
 const server = http.createServer((req, res) => {
     const reqUrl = url.parse(req.url, true);
     const method = req.method;
 
-    // Handle CORS for frontend access
+    // Handle CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -41,10 +58,11 @@ const server = http.createServer((req, res) => {
         });
         req.on('end', () => {
             const newBook = JSON.parse(body);
-            
-            // Validation: Ensure all required fields are present
+
+            // Validate book fields
             if (newBook.title && newBook.author && newBook.publisher && newBook.publishedDate && newBook.isbn) {
                 books.push(newBook);
+                writeBooksToFile(books); // Save to file
                 res.writeHead(201, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ message: 'Book added successfully', book: newBook }));
             } else {
@@ -63,9 +81,10 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             const updatedBook = JSON.parse(body);
             const index = books.findIndex(b => b.isbn === updatedBook.isbn);
+
             if (index !== -1) {
-                // Update book details while preserving existing fields
                 books[index] = { ...books[index], ...updatedBook };
+                writeBooksToFile(books); // Save to file
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ message: 'Book updated successfully', book: books[index] }));
             } else {
@@ -79,8 +98,10 @@ const server = http.createServer((req, res) => {
     else if (method === 'DELETE' && reqUrl.pathname === '/books') {
         const isbn = reqUrl.query.isbn;
         const index = books.findIndex(b => b.isbn === isbn);
+
         if (index !== -1) {
-            books.splice(index, 1); // Remove the book from the array
+            books.splice(index, 1);
+            writeBooksToFile(books); // Save to file
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ message: 'Book deleted successfully' }));
         } else {
