@@ -3,7 +3,7 @@ const url = require('url');
 const { parse } = require('querystring');
 
 // In-memory array to store books
-to let books = [];
+let books = [];
 
 // Create the HTTP server
 const server = http.createServer((req, res) => {
